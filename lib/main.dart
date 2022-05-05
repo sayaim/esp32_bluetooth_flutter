@@ -34,8 +34,8 @@ class JoyPad extends StatefulWidget {
 
 class _JoyPadState extends State<JoyPad> {
 
-  final String #define SERVICE_UUID = "4f705cb9-dd65-4fb3-a023-9c0abc499073";
-  final String #define CHARACTERISTIC_UUID = "7ec1bd64-ae0f-4fbc-b4fb-cb0db6f443ed";
+  final String #define SERVICE_UUID = "";
+  final String #define CHARACTERISTIC_UUID = "";
   final String TARGET_DEVICE_NAME = "esp32";
 
   FlutterBlue flutterBlue = FlutterBlue.instance;
