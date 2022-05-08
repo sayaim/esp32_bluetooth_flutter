@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+// ignore: import_of_legacy_library_into_null_safe
 import 'package:control_pad/models/gestures.dart';
+// ignore: import_of_legacy_library_into_null_safe
 import 'package:control_pad/control_pad.dart';
 import 'package:flutter_blue/flutter_blue.dart';
-import 'package:flutter_blue/gen/flutterblue.pbserver.dart';
 import 'dart:convert' show utf8;
 
 Future<void> main() async {
@@ -12,40 +13,45 @@ Future<void> main() async {
     [DeviceOrientation.landscapeRight, DeviceOrientation.landscapeLeft]
   );
 
-  runApp(MainScreen());
+  runApp(const MainScreen());
 }
 
 class MainScreen extends StatelessWidget {
+  const MainScreen({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Joy Pad Controller',
       debugShowCheckedModeBanner: false,
-      home: JoyPad(),
+      home: const JoyPad(),
       theme: ThemeData.dark(),
     );
   }
 }
 
 class JoyPad extends StatefulWidget {
+  const JoyPad({Key? key}) : super(key: key);
   @override
   _JoyPadState createState() => _JoyPadState();
 }
 
 class _JoyPadState extends State<JoyPad> {
 
-  final String #define SERVICE_UUID = "";
-  final String #define CHARACTERISTIC_UUID = "";
-  final String TARGET_DEVICE_NAME = "esp32";
+  // ignore: non_constant_identifier_names
+  final String SERVICE_UUID = "4f705cb9-dd65-4fb3-a023-9c0abc499073";
+  // ignore: non_constant_identifier_names
+  final String CHARACTERISTIC_UUID = "7ec1bd64-ae0f-4fbc-b4fb-cb0db6f443ed";
 
   FlutterBlue flutterBlue = FlutterBlue.instance;
-  StreamSubscription<ScanResult> scanSubSubscription;
+  // StreamSubscription<ScanResult> scanSubScription;
+  // StreamSubscription<ScanResult>;
 
-  BluetoothDevice targetDevice;
-  BluetoothCharacteristic targetCharacteristic;
+  late BluetoothDevice device;
+  late BluetoothCharacteristic targetCharacteristic;
 
   String connectionText = "";
 
+  @override
   void initState() {
     super.initState();
     startScan();
@@ -56,73 +62,48 @@ class _JoyPadState extends State<JoyPad> {
       connectionText = "Start Scanning";
     });
 
-    scanSubScription = flutterBlue.scan().listen((scanResult) {
-      if(scanResult.device.name == TARGET_DEVICE_NAME) {
-        print("device found");
-        stopScan();
-        setState(() {
-          connectionText = "Found target device";
+    flutterBlue.startScan(timeout: const Duration(seconds: 4));
+    flutterBlue.scanResults.listen((results) {
+      for (ScanResult r in results) {
+        debugPrint('${r.device.name} found! rssi: ${r.rssi}');
+      }
+      setState(() {
+          connectionText = "Found device !";
         });
 
-        targetDevice = scanResult.device;
         connectToDevice();
-
-      }
-    }onDone: () => stopScan());
+    });
+    flutterBlue.stopScan();
   }
 
-  stopScan() {
-    scanSubScription?.cancel();
-    scanSubScription = null;
-  }
-  
   connectToDevice() async {
-    if(targetDevice == null) return;
-
     setState(() {
       connectionText = "device connecting";
     });
 
-    await targetDevice.connect();
-    print("device connected");
-    setState(() {
-      connectionText = "device connected";
-    });
-
+    await device.connect();
     discoverServices();
   }
 
-  disconnectFromDevice() {
-    if(targetDevice == null) return;
-
-    targetDevice.disconnect();
-
-    setState(() {
-      connectionText = "device disconnected";
-    });
-  }
-
   discoverServices() async {
-    if(targetDevice == null) return;
 
-    List<BluetoothService> services = await targetDevice.discoverServices();
-    services.forEach((service) {
+    List<BluetoothService> services = await device.discoverServices();
+    for (var service in services) {
       if(service.uuid.toString() == SERVICE_UUID) {
-        service.Characteristics.forEach((characteristic) {
+        for (var characteristic in service.characteristics) {
           if(characteristic.uuid.toString() == CHARACTERISTIC_UUID) {
             targetCharacteristic = characteristic;
             writeData("Hi there esp32!!!");
             setState(() {
-              connectionText = "All Ready with ${targetDevice.name}";
+              connectionText = "All Ready with ${device.name}";
             });
           }
-        });
+        }
       }
-    });
+    }
   }
 
   writeData(String data) async {
-    if(targetCharacteristic == null) return;
 
     List<int> bytes = utf8.encode(data);
     await targetCharacteristic.write(bytes);
@@ -130,34 +111,38 @@ class _JoyPadState extends State<JoyPad> {
 
   @override
   Widget build(BuildContext context) {
-    JoystickDirectionCallback onDirectionChanged(double degrees, double distance) {
+    // ignore: body_might_complete_normally_nullable
+    JoystickDirectionCallback? onDirectionChanged(double degrees, double distance) {
         String data = "Degree: ${degrees.toStringAsFixed(2)}, distance: ${distance.toStringAsFixed(2)}";
-        print(data);
+        debugPrint(data);
         writeData(data);
+        // return null;
     }
 
-    PadButtonPressedCallback padButtonPressedCallback(int buttonIndex, Gestures gesture) {
-      String data = "buttonIndex: ${buttonIndex}";
-      print(data);
+    // ignore: body_might_complete_normally_nullable
+    PadButtonPressedCallback? padButtonPressedCallback(int buttonIndex, Gestures gesture) {
+      String data = "buttonIndex: $buttonIndex";
+      debugPrint(data);
       writeData(data);
+      // return null;
     }
     return Scaffold(
       appBar: AppBar(
         title: Text(connectionText),
       ),
       body: Container(
+        // ignore: unnecessary_null_comparison
         child: targetCharacteristic == null
-            ? Center(
-              child: Text(
-                "waiting...",
-                style: TextStyle(fontSize: 24, color: Colors.deepOrange),
-              ),
+          ? const Center(
+                child: Text("waiting...",
+                  style: TextStyle(fontSize: 24, color: Colors.deepOrange),
+                ),
             )
             : Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget> [
-                JoystickView(onDirectionChanged: onDirectionChanged,),
-                PadButtonsView(padButtonPressedCallback: padButtonPressedCallback,),
+                JoystickView(onDirectionChanged: onDirectionChanged),
+                PadButtonsView(padButtonPressedCallback: padButtonPressedCallback),
               ],
             ),
       ),
